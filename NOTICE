@@ -1,0 +1,27 @@
+This notice is quickstart guide to use genActor as a simple java software.
+
+To import a Excel file : 
+	Windows : genactors.cmd -m <method number> -f <myFile.xls>
+	Linux : genactors.sh -m <method number> -f <myFile.xls>	
+
+Available Methods :
+	1 --> creation of actors - no group affectation 
+	2 --> ceration of attributes and groups + group affectation
+	
+Available options :
+	-m method (default value : 1)
+	-s w4bpmn+_server (default value : "" )
+ 	-p rmi_port (default value : 7707)
+ 	-l w4_login (default value : admin)
+ 	-w w4_password (default value : admin)
+	
+Examples : 
+	genactors.cmd -f Acteurs.xls
+	genactors.cmd -m 1 -f Acteurs.xls
+	genactors.cmd -m 2 -f Acteurs.xls -p 11707
+	genactors.sh -f Acteurs.xls
+	genactors.sh -m 1 -f Acteurs.xls
+	genactors.sh -m 2 -f Acteurs.xls -p 11707
+	
+	
+ 
