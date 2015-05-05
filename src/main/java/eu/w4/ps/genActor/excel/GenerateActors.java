@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.read.biff.BiffException;
@@ -21,8 +22,10 @@ import eu.w4.engine.client.NetworkCommunicationException;
 import eu.w4.engine.client.TypeDefinitionIdentifier;
 import eu.w4.engine.client.UserAlreadyExistsException;
 import eu.w4.engine.client.UserIdentifier;
+import eu.w4.engine.client.UserPropertyKey;
 import eu.w4.engine.client.configuration.ConfigurationException;
 import eu.w4.engine.client.configuration.NetworkConfigurationParameter;
+import eu.w4.engine.client.mail.EmailNotification;
 import eu.w4.engine.client.service.AttributeDefinitionService;
 import eu.w4.engine.client.service.AuthenticationService;
 import eu.w4.engine.client.service.EngineService;
@@ -95,12 +98,14 @@ public class GenerateActors {
 		for (Object currentUser : lignes) {
 			if (currentUser instanceof UserBPMN) {
 				UserService userService = _engineService.getUserService();
+				Map<String,Object> userProperties = ((UserBPMN) currentUser).getProperties();
+				userProperties.put(UserPropertyKey.EMAIL_NOTIFICATION, EmailNotification.INSTANTANEOUSLY);
 				try {
 					UserIdentifier myUser = userService.createUser(
 							_principal, null,
 							((UserBPMN) currentUser).getLogin(),
 							((UserBPMN) currentUser).getPassword(), null,
-							((UserBPMN) currentUser).getProperties(), true);
+							userProperties, true);
 
 					ObjectFactory factory = _engineService.getObjectFactory();
 					AttributeDefinitionService attributeService = _engineService
