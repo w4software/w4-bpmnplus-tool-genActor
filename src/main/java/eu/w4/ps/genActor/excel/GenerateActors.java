@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 
 import jxl.Sheet;
 import jxl.Workbook;
+import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
 import eu.w4.common.configuration.ConfigurationParameter;
 import eu.w4.common.exception.CheckedException;
@@ -153,7 +154,9 @@ public class GenerateActors {
 	private List<Object> read(File file, int sheetNumber) throws BiffException,
 	IOException {
 		// loading of the workbook
-		final Workbook xlsWorkbook = Workbook.getWorkbook(file);
+		WorkbookSettings ws = new WorkbookSettings();
+		ws.setEncoding("Cp1252");
+		final Workbook xlsWorkbook = Workbook.getWorkbook(file,ws);
 		final Sheet xlsSheet = xlsWorkbook.getSheet(sheetNumber);
 		final int rows = xlsSheet.getRows();
 		final int columns = xlsSheet.getColumns();

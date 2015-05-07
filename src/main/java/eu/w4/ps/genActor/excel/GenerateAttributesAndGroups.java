@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import jxl.Sheet;
 import jxl.Workbook;
+import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
 import eu.w4.common.configuration.ConfigurationParameter;
 import eu.w4.common.exception.CheckedException;
@@ -105,8 +107,9 @@ public class GenerateAttributesAndGroups {
 		GroupService groupService = _engineService.getGroupService();
 		AttributeDefinitionService attributeService = _engineService
 				.getAttributeDefinitionService();
-
-		final Workbook xlsWorkbook = Workbook.getWorkbook(file);
+		WorkbookSettings ws = new WorkbookSettings();
+		ws.setEncoding("Cp1252");
+		final Workbook xlsWorkbook = Workbook.getWorkbook(file,ws);
 		final Sheet xlsSheet = xlsWorkbook.getSheet(sheetNumber);
 
 		final int rows = xlsSheet.getRows();
