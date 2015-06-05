@@ -1,14 +1,15 @@
-W4-bpmnplus-tool-notifier-rest
-=================================
+w4-bpmnplus-tool-genActor
+=========================
 
-This project is a tool to import users and groups in a W4 engine using an Excel File. 
+The goal of this tool is to import users and/or groups in W4 BPMN+ Engine from an Excel File. 
+
 
 Download
 --------
 
-The package is available from the following locations:
+The package is available from the [release page](https://github.com/w4software/w4-bpmnplus-tool-genActor/releases)
  
- 
+
 Installation
 ------------
 
@@ -16,13 +17,23 @@ Installation
 
 Extract the package, either zip or tar.gz.
 
-### Configuration
 
 Usage
 -----
 
-Command lign : please read the NOTICE
-In a java project : you can add the jar (and its dependencies) to your project and use it. 
+### Command line
+
+Please refer to the [NOTICE file](https://github.com/w4software/w4-bpmnplus-tool-genActor/blob/master/NOTICE) to
+read how this program can be run from the command line.
+
+You will need a JRE (Java Runtime Environment) installed and available prior to running it.
+
+
+### Java program
+
+The classes are also designed to be used directly from within a Java application.
+In that case, you can add the jar (and its dependencies) to your project classpath.
+You can find example usage in [example directory](https://github.com/w4software/w4-bpmnplus-tool-genActor/tree/master/src/example/java).
 
 
 License
