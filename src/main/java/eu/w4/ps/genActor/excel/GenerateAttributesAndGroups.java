@@ -148,7 +148,8 @@ public class GenerateAttributesAndGroups {
 							xlsSheet.getCell(4, r).getContents(), // mot de
 							// passe
 							null, properties, true);
-
+					 for (int rowNumber = 6;rowNumber<row;rowNumber++)
+                    			{
 					String attribute = xlsSheet.getCell(6, r).getContents();
 					if (attribute != null) {
 						String[] values = attribute.split(":");
@@ -158,6 +159,7 @@ public class GenerateAttributesAndGroups {
 								getCreateAttributeDefinition(_principal,
 										factory, attributeService, values[0],
 										values[1], null), values[2]);
+					}
 					}
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
