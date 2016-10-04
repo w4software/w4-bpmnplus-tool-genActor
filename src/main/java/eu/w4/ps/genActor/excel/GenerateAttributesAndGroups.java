@@ -7,6 +7,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import jxl.Sheet;
@@ -19,6 +20,7 @@ import eu.w4.engine.client.AttributeDefinition;
 import eu.w4.engine.client.AttributeDefinitionFilter;
 import eu.w4.engine.client.AttributeDefinitionIdentifier;
 import eu.w4.engine.client.GroupIdentifier;
+import eu.w4.engine.client.LanguageIdentifier;
 import eu.w4.engine.client.NetworkCommunicationException;
 import eu.w4.engine.client.TypeDefinitionIdentifier;
 import eu.w4.engine.client.UserIdentifier;
@@ -36,47 +38,40 @@ import eu.w4.engine.client.service.UserService;
 
 public class GenerateAttributesAndGroups {
 
-	private static AttributeDefinitionIdentifier createAttribute(
-			Principal principal, ObjectFactory factory,
-			AttributeDefinitionService attributeService, String prefix,
-			String name, String type) throws RemoteException, CheckedException {
+	private static int colNumForLanguage = 6;
+	private static int colNumForAttribut = 7;
 
-		TypeDefinitionIdentifier typeDefinitionIdentifier = factory
-				.newTypeDefinitionIdentifier();
+	private static AttributeDefinitionIdentifier createAttribute(Principal principal, ObjectFactory factory,
+			AttributeDefinitionService attributeService, String prefix, String name, String type)
+			throws RemoteException, CheckedException {
+
+		TypeDefinitionIdentifier typeDefinitionIdentifier = factory.newTypeDefinitionIdentifier();
 
 		if (type.toUpperCase().equals("STRING")) {
-			typeDefinitionIdentifier
-					.setId(TypeDefinitionService.STRING_TYPE_DEFINITION_ID);
+			typeDefinitionIdentifier.setId(TypeDefinitionService.STRING_TYPE_DEFINITION_ID);
 		} else if (type.toUpperCase().equals("LIST_STRING")) {
-			typeDefinitionIdentifier
-					.setId(TypeDefinitionService.STRING_LIST_TYPE_DEFINITION_ID);
+			typeDefinitionIdentifier.setId(TypeDefinitionService.STRING_LIST_TYPE_DEFINITION_ID);
 		}
 
-		return attributeService.createAttributeDefinition(principal, null,
-				prefix, name, null, typeDefinitionIdentifier, null);
+		return attributeService.createAttributeDefinition(principal, null, prefix, name, null, typeDefinitionIdentifier,
+				null);
 	}
 
-
-	private static AttributeDefinitionIdentifier getCreateAttributeDefinition(
-			Principal principal, ObjectFactory factory,
-			AttributeDefinitionService attributeService, String prefix,
-			String name, String type) throws RemoteException, CheckedException {
-		AttributeDefinitionFilter attributeDefinitionFilter = factory
-				.newAttributeDefinitionFilter();
+	private static AttributeDefinitionIdentifier getCreateAttributeDefinition(Principal principal,
+			ObjectFactory factory, AttributeDefinitionService attributeService, String prefix, String name, String type)
+			throws RemoteException, CheckedException {
+		AttributeDefinitionFilter attributeDefinitionFilter = factory.newAttributeDefinitionFilter();
 		attributeDefinitionFilter.attributeDefinitionNameLike(name);
 		attributeDefinitionFilter.attributeDefinitionPrefixLike(prefix);
 
-		List<AttributeDefinition> attributeDefinitions = attributeService
-				.searchAttributeDefinitions(principal, null,
-						attributeDefinitionFilter, null, null, null);
+		List<AttributeDefinition> attributeDefinitions = attributeService.searchAttributeDefinitions(principal, null,
+				attributeDefinitionFilter, null, null, null);
 		if (attributeDefinitions != null && attributeDefinitions.size() > 0) {
 			return attributeDefinitions.get(0).getIdentifier();
 		} else {
-			return createAttribute(principal, factory, attributeService,
-					prefix, name, type);
+			return createAttribute(principal, factory, attributeService, prefix, name, type);
 		}
 	}
-
 
 	private final Principal _principal;
 	private final EngineService _engineService;
@@ -87,32 +82,32 @@ public class GenerateAttributesAndGroups {
 		this._engineService = engineService;
 	}
 
-	public GenerateAttributesAndGroups(final String serverName,
-			final String portNumber, final String login, final String password) throws NetworkCommunicationException, ConfigurationException, CheckedException, RemoteException {
+	public GenerateAttributesAndGroups(final String serverName, final String portNumber, final String login,
+			final String password)
+			throws NetworkCommunicationException, ConfigurationException, CheckedException, RemoteException {
 		Map<ConfigurationParameter, String> conf = new HashMap<ConfigurationParameter, String>();
 		conf.put(NetworkConfigurationParameter.RMI__REGISTRY_HOST, serverName);
 		conf.put(NetworkConfigurationParameter.RMI__REGISTRY_PORT, portNumber);
 
-		this._engineService = EngineServiceFactory
-				.getEngineService(conf);
-		AuthenticationService authService = _engineService
-				.getAuthenticationService();
+		this._engineService = EngineServiceFactory.getEngineService(conf);
+		AuthenticationService authService = _engineService.getAuthenticationService();
 		this._principal = authService.login(login, password);
 	}
 
-	public void createAttributesAndGroups(File file, int sheetNumber) throws CheckedException, BiffException, IOException {
+	public void createAttributesAndGroups(File file, int sheetNumber)
+			throws CheckedException, BiffException, IOException {
 
 		ObjectFactory factory = _engineService.getObjectFactory();
 		UserService userService = _engineService.getUserService();
 		GroupService groupService = _engineService.getGroupService();
-		AttributeDefinitionService attributeService = _engineService
-				.getAttributeDefinitionService();
+		AttributeDefinitionService attributeService = _engineService.getAttributeDefinitionService();
 		WorkbookSettings ws = new WorkbookSettings();
 		ws.setEncoding("Cp1252");
-		final Workbook xlsWorkbook = Workbook.getWorkbook(file,ws);
+		final Workbook xlsWorkbook = Workbook.getWorkbook(file, ws);
 		final Sheet xlsSheet = xlsWorkbook.getSheet(sheetNumber);
 
 		final int rows = xlsSheet.getRows();
+		final int columns = xlsSheet.getColumns();
 
 		for (int r = 1; r < rows; r++) {
 
@@ -120,46 +115,53 @@ public class GenerateAttributesAndGroups {
 
 				System.out.println("\nCreation of an attribute");
 				try {
-					createAttribute(_principal, factory, attributeService,
-							xlsSheet.getCell(1, r).getContents(), xlsSheet
-							.getCell(2, r).getContents(), xlsSheet
-							.getCell(4, r).getContents());
+					createAttribute(_principal, factory, attributeService, xlsSheet.getCell(1, r).getContents(),
+							xlsSheet.getCell(2, r).getContents(), xlsSheet.getCell(4, r).getContents());
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
 
 			}
 			if (xlsSheet.getCell(0, r).getContents().equals("USER")) {
-				System.out
-						.println("\nCreation of a user --> Prefer the other creation option");
+				System.out.println("\nCreation of a user --> Prefer the other creation option");
 
 				try {
 					HashMap<String, Object> properties = new HashMap<String, Object>();
-					properties.put(UserPropertyKey.FIRST_NAME, xlsSheet
-							.getCell(2, r).getContents());
-					properties.put(UserPropertyKey.LAST_NAME,
-							xlsSheet.getCell(1, r).getContents());
-					properties.put(UserPropertyKey.EMAIL, xlsSheet
-							.getCell(5, r).getContents());
+					properties.put(UserPropertyKey.FIRST_NAME, xlsSheet.getCell(2, r).getContents());
+					properties.put(UserPropertyKey.LAST_NAME, xlsSheet.getCell(1, r).getContents());
+					properties.put(UserPropertyKey.EMAIL, xlsSheet.getCell(5, r).getContents());
 
-					UserIdentifier myUser = userService.createUser(
-							_principal, null, xlsSheet.getCell(3, r)
-									.getContents(), // login
-							xlsSheet.getCell(4, r).getContents(), // mot de
-							// passe
-							null, properties, true);
-					 for (int rowNumber = 6;rowNumber<row;rowNumber++)
-                    			{
-					String attribute = xlsSheet.getCell(6, r).getContents();
-					if (attribute != null) {
-						String[] values = attribute.split(":");
-						userService.addUserAttribute(
-								_principal,
-								myUser,
-								getCreateAttributeDefinition(_principal,
-										factory, attributeService, values[0],
-										values[1], null), values[2]);
+					final String login = xlsSheet.getCell(3, r).getContents();
+					final String pwd = xlsSheet.getCell(4, r).getContents();
+					final String locale = xlsSheet.getCell(colNumForLanguage, r).getContents();
+					final String[] localeParameters = locale.split("_");
+					final String language = localeParameters[0];
+					final String country = localeParameters[1];
+					// create the locale for the usr
+					Locale userLocal = Locale.ENGLISH;
+					
+					Locale[] locales = Locale.getAvailableLocales();
+					for(int i = 0; i< locales.length; i++)
+					{
+						Locale availableLocale = locales[i];
+						if (availableLocale.equals(new Locale(language, "")))
+						{
+							userLocal = availableLocale;
+							break;
+						}
 					}
+					LanguageIdentifier languageIdentifier = factory.newLanguageIdentifier();
+					languageIdentifier.setLocale(userLocal);
+
+					UserIdentifier myUser = userService.createUser(_principal, null, login, pwd, languageIdentifier,
+							properties, true);
+					for (int colNumber = colNumForAttribut; colNumber < columns; colNumber++) {
+						String attribute = xlsSheet.getCell(colNumber, r).getContents();
+						if (attribute != null) {
+							String[] values = attribute.split(":");
+							userService.addUserAttribute(_principal, myUser, getCreateAttributeDefinition(_principal,
+									factory, attributeService, values[0], values[1], null), values[2]);
+						}
 					}
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -172,16 +174,13 @@ public class GenerateAttributesAndGroups {
 				try {
 					GroupIdentifier myGroup = null;
 					if (xlsSheet.getCell(2, r).getContents().equals("")) {
-						myGroup = groupService.createGroup(_principal, null,
-								xlsSheet.getCell(1, r).getContents(), null);
+						myGroup = groupService.createGroup(_principal, null, xlsSheet.getCell(1, r).getContents(),
+								null);
 					} else {
-						GroupIdentifier groupParentId = factory
-								.newGroupIdentifier();
-						groupParentId.setName(xlsSheet.getCell(2, r)
-								.getContents());
-						myGroup = groupService.createGroup(_principal,
-								groupParentId, xlsSheet.getCell(1, r)
-										.getContents(), null);
+						GroupIdentifier groupParentId = factory.newGroupIdentifier();
+						groupParentId.setName(xlsSheet.getCell(2, r).getContents());
+						myGroup = groupService.createGroup(_principal, groupParentId,
+								xlsSheet.getCell(1, r).getContents(), null);
 					}
 
 					int i = 3;
@@ -190,27 +189,19 @@ public class GenerateAttributesAndGroups {
 						String attribute = xlsSheet.getCell(i, r).getContents();
 						String[] values = attribute.split(":");
 						if (values[2].startsWith("[")) {
-							String listValues = values[2].substring(1,
-									values[2].length() - 1);
+							String listValues = values[2].substring(1, values[2].length() - 1);
 
 							List<String> list = new ArrayList<String>();
 							String[] tab = listValues.split(";");
 							for (String element : tab) {
 								list.add(element);
 							}
-							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(
-									_principal, factory, attributeService,
-									values[0], values[1], null);
-							groupService.addGroupAttribute(_principal,
-									myGroup, attributeDefinition, list);
+							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
+									factory, attributeService, values[0], values[1], null);
+							groupService.addGroupAttribute(_principal, myGroup, attributeDefinition, list);
 						} else {
-							groupService.addGroupAttribute(
-									_principal,
-									myGroup,
-									getCreateAttributeDefinition(_principal,
-											factory, attributeService,
-											values[0], values[1], null),
-											values[2]);
+							groupService.addGroupAttribute(_principal, myGroup, getCreateAttributeDefinition(_principal,
+									factory, attributeService, values[0], values[1], null), values[2]);
 						}
 						i++;
 					}
@@ -219,8 +210,7 @@ public class GenerateAttributesAndGroups {
 				}
 			}
 			if (xlsSheet.getCell(0, r).getContents().equals("ASSIGNATION")) {
-				System.out.println("\nGroup affectation to : "
-						+ xlsSheet.getCell(1, r).getContents());
+				System.out.println("\nGroup affectation to : " + xlsSheet.getCell(1, r).getContents());
 
 				try {
 					UserIdentifier user = factory.newUserIdentifier();
@@ -231,11 +221,9 @@ public class GenerateAttributesAndGroups {
 					if (!listGroup.equals("")) {
 						String[] values = listGroup.split(";");
 						for (String value : values) {
-							GroupIdentifier group = factory
-									.newGroupIdentifier();
+							GroupIdentifier group = factory.newGroupIdentifier();
 							group.setName(value);
-							userService.addUserToGroup(_principal, user,
-									group);
+							userService.addUserToGroup(_principal, user, group);
 						}
 					}
 				} catch (Exception e) {
@@ -244,5 +232,5 @@ public class GenerateAttributesAndGroups {
 			}
 		}
 		System.out.println("done.");
-	}	
+	}
 }

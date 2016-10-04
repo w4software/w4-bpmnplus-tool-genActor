@@ -7,6 +7,8 @@ import eu.w4.ps.genActor.cli.CliException;
 import eu.w4.ps.genActor.cli.CliParameter;
 import eu.w4.ps.genActor.cli.CliParser;
 import eu.w4.ps.genActor.cli.CliPrinter;
+import eu.w4.ps.genActor.excel.GenerateActors;
+import eu.w4.ps.genActor.excel.GenerateAttributesAndGroups;
 
 public class Main {
 
