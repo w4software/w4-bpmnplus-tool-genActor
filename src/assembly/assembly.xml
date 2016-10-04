@@ -15,8 +15,8 @@
         <include>README*</include>
         <include>LICENSE*</include>
         <include>NOTICE*</include>
-		<include>InitUser.xls</include>
-		<include>create_actors.xls</include>
+        <include>InitUser.xls</include>
+        <include>create_actors.xls</include>
       </includes>
     </fileSet>
     <fileSet>
