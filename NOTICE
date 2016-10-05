@@ -6,7 +6,7 @@ To import a Excel file :
 
 Available Methods :
 	1 --> creation of actors - no group affectation 
-	2 --> ceration of attributes and groups + group affectation
+	2 --> creation of actors, attributes and groups + group affectation
 	
 Available options :
 	-m method (default value : 1)

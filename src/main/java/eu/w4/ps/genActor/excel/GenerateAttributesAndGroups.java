@@ -9,11 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import jxl.Sheet;
-import jxl.Workbook;
-import jxl.WorkbookSettings;
-import jxl.read.biff.BiffException;
 import eu.w4.common.configuration.ConfigurationParameter;
 import eu.w4.common.exception.CheckedException;
 import eu.w4.engine.client.AttributeDefinition;
@@ -35,11 +33,12 @@ import eu.w4.engine.client.service.GroupService;
 import eu.w4.engine.client.service.ObjectFactory;
 import eu.w4.engine.client.service.TypeDefinitionService;
 import eu.w4.engine.client.service.UserService;
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.WorkbookSettings;
+import jxl.read.biff.BiffException;
 
 public class GenerateAttributesAndGroups {
-
-	private static int colNumForLanguage = 6;
-	private static int colNumForAttribut = 7;
 
 	private static AttributeDefinitionIdentifier createAttribute(Principal principal, ObjectFactory factory,
 			AttributeDefinitionService attributeService, String prefix, String name, String type)
@@ -107,11 +106,13 @@ public class GenerateAttributesAndGroups {
 		final Sheet xlsSheet = xlsWorkbook.getSheet(sheetNumber);
 
 		final int rows = xlsSheet.getRows();
-		final int columns = xlsSheet.getColumns();
 
 		for (int r = 1; r < rows; r++) {
 
-			if (xlsSheet.getCell(0, r).getContents().equals("ATTRIBUT")) {
+			final int colNumForType = 0;	
+			final String type = xlsSheet.getCell(colNumForType, r).getContents();
+
+			if ("ATTRIBUT".equalsIgnoreCase(type)) {
 
 				System.out.println("\nCreation of an attribute");
 				try {
@@ -122,29 +123,44 @@ public class GenerateAttributesAndGroups {
 				}
 
 			}
-			if (xlsSheet.getCell(0, r).getContents().equals("USER")) {
+			if ("USER".equalsIgnoreCase(type)) {
+				
+				//mapping the column number to the user information
+				final int colNumForLastName = 1;
+				final int colNumForFirstName = 2;		
+				final int colNumForLogin = 3;
+				final int colNumForPwd = 4;
+				final int colNumForEmail = 5;
+				final int colNumForLanguage = 6;
+				final int colNumForAttribut = 7;
+				
+				//get content of the column
+				final String firstName = xlsSheet.getCell(colNumForFirstName, r).getContents();
+				final String lastName = xlsSheet.getCell(colNumForLastName, r).getContents();
+				final String email = xlsSheet.getCell(colNumForEmail, r).getContents();
+				final String login = xlsSheet.getCell(colNumForLogin, r).getContents();
+				final String pwd = xlsSheet.getCell(colNumForPwd, r).getContents();
+				final String locale = xlsSheet.getCell(colNumForLanguage, r).getContents();
+				final String attributes = xlsSheet.getCell(colNumForAttribut, r).getContents();
+				String[] listAttributes = convertContentToArray(attributes);
+				
 				System.out.println("\nCreation of a user --> Prefer the other creation option");
 
 				try {
-					HashMap<String, Object> properties = new HashMap<String, Object>();
-					properties.put(UserPropertyKey.FIRST_NAME, xlsSheet.getCell(2, r).getContents());
-					properties.put(UserPropertyKey.LAST_NAME, xlsSheet.getCell(1, r).getContents());
-					properties.put(UserPropertyKey.EMAIL, xlsSheet.getCell(5, r).getContents());
-
-					final String login = xlsSheet.getCell(3, r).getContents();
-					final String pwd = xlsSheet.getCell(4, r).getContents();
-					final String locale = xlsSheet.getCell(colNumForLanguage, r).getContents();
-					final String[] localeParameters = locale.split("_");
-					final String language = localeParameters[0];
-					final String country = localeParameters[1];
-					// create the locale for the usr
-					Locale userLocal = Locale.ENGLISH;
 					
+					//create the properties
+					HashMap<String, Object> properties = new HashMap<String, Object>();
+					properties.put(UserPropertyKey.FIRST_NAME, firstName);
+					properties.put(UserPropertyKey.LAST_NAME, lastName);
+					properties.put(UserPropertyKey.EMAIL, email);
+
+					// create the locale for the user
+					Locale userLocal = Locale.ENGLISH;
 					Locale[] locales = Locale.getAvailableLocales();
 					for(int i = 0; i< locales.length; i++)
 					{
 						Locale availableLocale = locales[i];
-						if (availableLocale.equals(new Locale(language, "")))
+						if (availableLocale.equals(new Locale(locale, "")))
 						{
 							userLocal = availableLocale;
 							break;
@@ -153,77 +169,88 @@ public class GenerateAttributesAndGroups {
 					LanguageIdentifier languageIdentifier = factory.newLanguageIdentifier();
 					languageIdentifier.setLocale(userLocal);
 
+					//create the user
 					UserIdentifier myUser = userService.createUser(_principal, null, login, pwd, languageIdentifier,
 							properties, true);
-					for (int colNumber = colNumForAttribut; colNumber < columns; colNumber++) {
-						String attribute = xlsSheet.getCell(colNumber, r).getContents();
-						if (attribute != null) {
+					
+					//add attributes to the user
+					for (String attribute : listAttributes) {
+						if (attribute != null && !attribute.isEmpty())
+						{
 							String[] values = attribute.split(":");
-							userService.addUserAttribute(_principal, myUser, getCreateAttributeDefinition(_principal,
-									factory, attributeService, values[0], values[1], null), values[2]);
+							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
+									factory, attributeService, values[0], values[1], null);
+							userService.addUserAttribute(_principal, myUser, attributeDefinition, values[2]);
 						}
 					}
+
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
 			}
 
-			if (xlsSheet.getCell(0, r).getContents().equals("GROUP")) {
+			if ("GROUP".equalsIgnoreCase(type)) {
 				System.out.println("\nCreation of a group");
 
+				//mapping the column number to the group information
+				final int colNumForgroupName = 1;
+				final int colNumForgroupParent = 2;		
+				final int colNumForAttribut = 3;
+				
+				//get content of the column
+				final String groupName = xlsSheet.getCell(colNumForgroupName, r).getContents();
+				final String groupParentName = xlsSheet.getCell(colNumForgroupParent, r).getContents();
+				final String attributes = xlsSheet.getCell(colNumForAttribut, r).getContents();
+				String[] listAttributes = convertContentToArray(attributes);
+				
 				try {
 					GroupIdentifier myGroup = null;
-					if (xlsSheet.getCell(2, r).getContents().equals("")) {
-						myGroup = groupService.createGroup(_principal, null, xlsSheet.getCell(1, r).getContents(),
+					if ("".equals(groupParentName)) {
+						myGroup = groupService.createGroup(_principal, null, groupName,
 								null);
 					} else {
 						GroupIdentifier groupParentId = factory.newGroupIdentifier();
-						groupParentId.setName(xlsSheet.getCell(2, r).getContents());
+						groupParentId.setName(groupParentName);
 						myGroup = groupService.createGroup(_principal, groupParentId,
-								xlsSheet.getCell(1, r).getContents(), null);
+								groupName, null);
 					}
 
-					int i = 3;
-					while (xlsSheet.getCell(i, r).getContents() != null
-							&& !xlsSheet.getCell(i, r).getContents().equals("")) {
-						String attribute = xlsSheet.getCell(i, r).getContents();
-						String[] values = attribute.split(":");
-						if (values[2].startsWith("[")) {
-							String listValues = values[2].substring(1, values[2].length() - 1);
-
-							List<String> list = new ArrayList<String>();
-							String[] tab = listValues.split(";");
-							for (String element : tab) {
-								list.add(element);
-							}
+					//add attributes to the group
+					for (String attribute : listAttributes) {
+						if (attribute != null && !attribute.isEmpty())
+						{
+							String[] values = attribute.split(":");
 							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
 									factory, attributeService, values[0], values[1], null);
-							groupService.addGroupAttribute(_principal, myGroup, attributeDefinition, list);
-						} else {
-							groupService.addGroupAttribute(_principal, myGroup, getCreateAttributeDefinition(_principal,
-									factory, attributeService, values[0], values[1], null), values[2]);
+							groupService.addGroupAttribute(_principal, myGroup, attributeDefinition, values[2]);
 						}
-						i++;
 					}
+
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
 			}
-			if (xlsSheet.getCell(0, r).getContents().equals("ASSIGNATION")) {
+			if ("ASSIGNATION".equalsIgnoreCase(type)) {
 				System.out.println("\nGroup affectation to : " + xlsSheet.getCell(1, r).getContents());
 
+				//mapping the column number to the assignation information
+				final int colNumForUserLogin = 1;
+				final int colNumForGroupNames = 2;		
+				
+				//get content of the column
+				final String userLogin = xlsSheet.getCell(colNumForUserLogin, r).getContents();
+				final String groupNames = xlsSheet.getCell(colNumForGroupNames, r).getContents();
+				String[] listGroup = convertContentToArray(groupNames);
+				
 				try {
 					UserIdentifier user = factory.newUserIdentifier();
-					user.setName(xlsSheet.getCell(1, r).getContents());
-
-					String listGroup = xlsSheet.getCell(2, r).getContents();
-					listGroup = listGroup.substring(1, listGroup.length() - 1);
-					if (!listGroup.equals("")) {
-						String[] values = listGroup.split(";");
-						for (String value : values) {
-							GroupIdentifier group = factory.newGroupIdentifier();
-							group.setName(value);
-							userService.addUserToGroup(_principal, user, group);
+					user.setName(userLogin);
+					for (String groupName : listGroup) {
+						if (groupName != null && !groupName.isEmpty())
+						{
+							GroupIdentifier groupIdentifier = factory.newGroupIdentifier();
+							groupIdentifier.setName(groupName);
+							userService.addUserToGroup(_principal, user, groupIdentifier);								
 						}
 					}
 				} catch (Exception e) {
@@ -232,5 +259,26 @@ public class GenerateAttributesAndGroups {
 			}
 		}
 		System.out.println("done.");
+	}
+	
+	public boolean isList(String content)
+	{
+		return Pattern.matches("^\\[.*\\]$", content);
+	}
+	
+	public String[] convertContentToArray(String content)
+	{
+		String[] contentAsArray;
+		if(isList(content))
+		{
+			String contentStripped = content.substring(1, content.length() - 1);
+			contentAsArray = contentStripped.split(";");
+		}
+		else
+		{
+			contentAsArray = new String[1];
+			contentAsArray[0] = content;
+		}
+		return contentAsArray;
 	}
 }
