@@ -25,6 +25,7 @@ import eu.w4.engine.client.UserIdentifier;
 import eu.w4.engine.client.UserPropertyKey;
 import eu.w4.engine.client.configuration.ConfigurationException;
 import eu.w4.engine.client.configuration.NetworkConfigurationParameter;
+import eu.w4.engine.client.mail.EmailNotification;
 import eu.w4.engine.client.service.AttributeDefinitionService;
 import eu.w4.engine.client.service.AuthenticationService;
 import eu.w4.engine.client.service.EngineService;
@@ -133,6 +134,7 @@ public class GenerateAttributesAndGroups {
 				final int colNumForEmail = 5;
 				final int colNumForLanguage = 6;
 				final int colNumForAttribut = 7;
+				final int colNumForEmailNotification = 8;
 				
 				//get content of the column
 				final String firstName = xlsSheet.getCell(colNumForFirstName, r).getContents();
@@ -142,6 +144,7 @@ public class GenerateAttributesAndGroups {
 				final String pwd = xlsSheet.getCell(colNumForPwd, r).getContents();
 				final String locale = xlsSheet.getCell(colNumForLanguage, r).getContents();
 				final String attributes = xlsSheet.getCell(colNumForAttribut, r).getContents();
+				final String emailNotification = xlsSheet.getCell(colNumForEmailNotification, r).getContents();
 				String[] listAttributes = convertContentToArray(attributes);
 				
 				System.out.println("\nCreation of a user --> Prefer the other creation option");
@@ -153,6 +156,15 @@ public class GenerateAttributesAndGroups {
 					properties.put(UserPropertyKey.FIRST_NAME, firstName);
 					properties.put(UserPropertyKey.LAST_NAME, lastName);
 					properties.put(UserPropertyKey.EMAIL, email);
+					if(EmailNotification.NONE.name().equalsIgnoreCase(emailNotification))
+					{
+						properties.put(UserPropertyKey.EMAIL_NOTIFICATION, EmailNotification.NONE);
+					}
+					else
+					{
+						properties.put(UserPropertyKey.EMAIL_NOTIFICATION, EmailNotification.INSTANTANEOUSLY);
+					}
+					
 
 					// create the locale for the user
 					Locale userLocal = Locale.ENGLISH;
