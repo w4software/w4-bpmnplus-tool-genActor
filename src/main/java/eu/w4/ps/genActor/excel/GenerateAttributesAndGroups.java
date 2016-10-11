@@ -110,33 +110,37 @@ public class GenerateAttributesAndGroups {
 
 		for (int r = 1; r < rows; r++) {
 
-			final int colNumForType = 0;	
+			final int colNumForType = 0;
 			final String type = xlsSheet.getCell(colNumForType, r).getContents();
 
 			if ("ATTRIBUT".equalsIgnoreCase(type)) {
 
 				System.out.println("\nCreation of an attribute");
 				try {
-					createAttribute(_principal, factory, attributeService, xlsSheet.getCell(1, r).getContents(),
+					AttributeDefinitionIdentifier attributeDefinitionIdentifier = createAttribute(_principal, factory,
+							attributeService, xlsSheet.getCell(1, r).getContents(),
 							xlsSheet.getCell(2, r).getContents(), xlsSheet.getCell(4, r).getContents());
+
+					System.out.println("attribute " + attributeDefinitionIdentifier.getName() + "/"
+							+ attributeDefinitionIdentifier.getId() + " is created");
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
 
 			}
 			if ("USER".equalsIgnoreCase(type)) {
-				
-				//mapping the column number to the user information
+
+				// mapping the column number to the user information
 				final int colNumForLastName = 1;
-				final int colNumForFirstName = 2;		
+				final int colNumForFirstName = 2;
 				final int colNumForLogin = 3;
 				final int colNumForPwd = 4;
 				final int colNumForEmail = 5;
 				final int colNumForLanguage = 6;
 				final int colNumForAttribut = 7;
 				final int colNumForEmailNotification = 8;
-				
-				//get content of the column
+
+				// get content of the column
 				final String firstName = xlsSheet.getCell(colNumForFirstName, r).getContents();
 				final String lastName = xlsSheet.getCell(colNumForLastName, r).getContents();
 				final String email = xlsSheet.getCell(colNumForEmail, r).getContents();
@@ -146,34 +150,28 @@ public class GenerateAttributesAndGroups {
 				final String attributes = xlsSheet.getCell(colNumForAttribut, r).getContents();
 				final String emailNotification = xlsSheet.getCell(colNumForEmailNotification, r).getContents();
 				String[] listAttributes = convertContentToArray(attributes);
-				
-				System.out.println("\nCreation of a user --> Prefer the other creation option");
+
+				System.out.println("\nCreation of a user");
 
 				try {
-					
-					//create the properties
+
+					// create the properties
 					HashMap<String, Object> properties = new HashMap<String, Object>();
 					properties.put(UserPropertyKey.FIRST_NAME, firstName);
 					properties.put(UserPropertyKey.LAST_NAME, lastName);
 					properties.put(UserPropertyKey.EMAIL, email);
-					if(EmailNotification.NONE.name().equalsIgnoreCase(emailNotification))
-					{
+					if (EmailNotification.NONE.name().equalsIgnoreCase(emailNotification)) {
 						properties.put(UserPropertyKey.EMAIL_NOTIFICATION, EmailNotification.NONE);
-					}
-					else
-					{
+					} else {
 						properties.put(UserPropertyKey.EMAIL_NOTIFICATION, EmailNotification.INSTANTANEOUSLY);
 					}
-					
 
 					// create the locale for the user
 					Locale userLocal = Locale.ENGLISH;
 					Locale[] locales = Locale.getAvailableLocales();
-					for(int i = 0; i< locales.length; i++)
-					{
+					for (int i = 0; i < locales.length; i++) {
 						Locale availableLocale = locales[i];
-						if (availableLocale.equals(new Locale(locale, "")))
-						{
+						if (availableLocale.equals(new Locale(locale, ""))) {
 							userLocal = availableLocale;
 							break;
 						}
@@ -181,20 +179,21 @@ public class GenerateAttributesAndGroups {
 					LanguageIdentifier languageIdentifier = factory.newLanguageIdentifier();
 					languageIdentifier.setLocale(userLocal);
 
-					//create the user
+					// create the user
 					UserIdentifier myUser = userService.createUser(_principal, null, login, pwd, languageIdentifier,
 							properties, true);
-					
-					//add attributes to the user
+
+					// add attributes to the user
 					for (String attribute : listAttributes) {
-						if (attribute != null && !attribute.isEmpty())
-						{
+						if (attribute != null && !attribute.isEmpty()) {
 							String[] values = attribute.split(":");
 							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
 									factory, attributeService, values[0], values[1], null);
 							userService.addUserAttribute(_principal, myUser, attributeDefinition, values[2]);
 						}
 					}
+
+					System.out.println("User " + myUser.getName() + "/" + myUser.getId() + " is created");
 
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -204,39 +203,38 @@ public class GenerateAttributesAndGroups {
 			if ("GROUP".equalsIgnoreCase(type)) {
 				System.out.println("\nCreation of a group");
 
-				//mapping the column number to the group information
+				// mapping the column number to the group information
 				final int colNumForgroupName = 1;
-				final int colNumForgroupParent = 2;		
+				final int colNumForgroupParent = 2;
 				final int colNumForAttribut = 3;
-				
-				//get content of the column
+
+				// get content of the column
 				final String groupName = xlsSheet.getCell(colNumForgroupName, r).getContents();
 				final String groupParentName = xlsSheet.getCell(colNumForgroupParent, r).getContents();
 				final String attributes = xlsSheet.getCell(colNumForAttribut, r).getContents();
 				String[] listAttributes = convertContentToArray(attributes);
-				
+
 				try {
 					GroupIdentifier myGroup = null;
 					if ("".equals(groupParentName)) {
-						myGroup = groupService.createGroup(_principal, null, groupName,
-								null);
+						myGroup = groupService.createGroup(_principal, null, groupName, null);
 					} else {
 						GroupIdentifier groupParentId = factory.newGroupIdentifier();
 						groupParentId.setName(groupParentName);
-						myGroup = groupService.createGroup(_principal, groupParentId,
-								groupName, null);
+						myGroup = groupService.createGroup(_principal, groupParentId, groupName, null);
 					}
 
-					//add attributes to the group
+					// add attributes to the group
 					for (String attribute : listAttributes) {
-						if (attribute != null && !attribute.isEmpty())
-						{
+						if (attribute != null && !attribute.isEmpty()) {
 							String[] values = attribute.split(":");
 							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
 									factory, attributeService, values[0], values[1], null);
 							groupService.addGroupAttribute(_principal, myGroup, attributeDefinition, values[2]);
 						}
 					}
+
+					System.out.println("group " + myGroup.getName() + "/" + myGroup.getId() + " is created");
 
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -245,24 +243,23 @@ public class GenerateAttributesAndGroups {
 			if ("ASSIGNATION".equalsIgnoreCase(type)) {
 				System.out.println("\nGroup affectation to : " + xlsSheet.getCell(1, r).getContents());
 
-				//mapping the column number to the assignation information
+				// mapping the column number to the assignation information
 				final int colNumForUserLogin = 1;
-				final int colNumForGroupNames = 2;		
-				
-				//get content of the column
+				final int colNumForGroupNames = 2;
+
+				// get content of the column
 				final String userLogin = xlsSheet.getCell(colNumForUserLogin, r).getContents();
 				final String groupNames = xlsSheet.getCell(colNumForGroupNames, r).getContents();
 				String[] listGroup = convertContentToArray(groupNames);
-				
+
 				try {
 					UserIdentifier user = factory.newUserIdentifier();
 					user.setName(userLogin);
 					for (String groupName : listGroup) {
-						if (groupName != null && !groupName.isEmpty())
-						{
+						if (groupName != null && !groupName.isEmpty()) {
 							GroupIdentifier groupIdentifier = factory.newGroupIdentifier();
 							groupIdentifier.setName(groupName);
-							userService.addUserToGroup(_principal, user, groupIdentifier);								
+							userService.addUserToGroup(_principal, user, groupIdentifier);
 						}
 					}
 				} catch (Exception e) {
@@ -272,22 +269,17 @@ public class GenerateAttributesAndGroups {
 		}
 		System.out.println("done.");
 	}
-	
-	public boolean isList(String content)
-	{
+
+	public boolean isList(String content) {
 		return Pattern.matches("^\\[.*\\]$", content);
 	}
-	
-	public String[] convertContentToArray(String content)
-	{
+
+	public String[] convertContentToArray(String content) {
 		String[] contentAsArray;
-		if(isList(content))
-		{
+		if (isList(content)) {
 			String contentStripped = content.substring(1, content.length() - 1);
 			contentAsArray = contentStripped.split(";");
-		}
-		else
-		{
+		} else {
 			contentAsArray = new String[1];
 			contentAsArray[0] = content;
 		}
