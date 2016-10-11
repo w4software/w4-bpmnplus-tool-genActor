@@ -21,7 +21,9 @@ import eu.w4.engine.client.GroupIdentifier;
 import eu.w4.engine.client.LanguageIdentifier;
 import eu.w4.engine.client.NetworkCommunicationException;
 import eu.w4.engine.client.TypeDefinitionIdentifier;
+import eu.w4.engine.client.User;
 import eu.w4.engine.client.UserIdentifier;
+import eu.w4.engine.client.UserNotFoundException;
 import eu.w4.engine.client.UserPropertyKey;
 import eu.w4.engine.client.configuration.ConfigurationException;
 import eu.w4.engine.client.configuration.NetworkConfigurationParameter;
@@ -179,21 +181,32 @@ public class GenerateAttributesAndGroups {
 					LanguageIdentifier languageIdentifier = factory.newLanguageIdentifier();
 					languageIdentifier.setLocale(userLocal);
 
-					// create the user
-					UserIdentifier myUser = userService.createUser(_principal, null, login, pwd, languageIdentifier,
-							properties, true);
+					// If the user already exist -> modify the user
+					// Otherwise creation of the user
+					try {
+						UserIdentifier userIdentifier = factory.newUserIdentifier();
+						userIdentifier.setName(login);
+						userService.getUser(_principal, userIdentifier, null);
+						UserIdentifier myUser = userService.modifyUser(_principal, userIdentifier, login,
+								languageIdentifier, properties, true);
+						System.out.println("User " + myUser.getName() + "/" + myUser.getId() + " is modified");
+					} catch (UserNotFoundException e) {
+						// create the user
+						UserIdentifier myUser = userService.createUser(_principal, null, login, pwd, languageIdentifier,
+								properties, true);
 
-					// add attributes to the user
-					for (String attribute : listAttributes) {
-						if (attribute != null && !attribute.isEmpty()) {
-							String[] values = attribute.split(":");
-							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
-									factory, attributeService, values[0], values[1], null);
-							userService.addUserAttribute(_principal, myUser, attributeDefinition, values[2]);
+						// add attributes to the user
+						for (String attribute : listAttributes) {
+							if (attribute != null && !attribute.isEmpty()) {
+								String[] values = attribute.split(":");
+								AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(
+										_principal, factory, attributeService, values[0], values[1], null);
+								userService.addUserAttribute(_principal, myUser, attributeDefinition, values[2]);
+							}
 						}
-					}
 
-					System.out.println("User " + myUser.getName() + "/" + myUser.getId() + " is created");
+						System.out.println("User " + myUser.getName() + "/" + myUser.getId() + " is created");
+					}
 
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
