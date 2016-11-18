@@ -18,6 +18,7 @@ import eu.w4.engine.client.AttributeDefinition;
 import eu.w4.engine.client.AttributeDefinitionFilter;
 import eu.w4.engine.client.AttributeDefinitionIdentifier;
 import eu.w4.engine.client.GroupIdentifier;
+import eu.w4.engine.client.GroupNotFoundException;
 import eu.w4.engine.client.LanguageIdentifier;
 import eu.w4.engine.client.NetworkCommunicationException;
 import eu.w4.engine.client.TypeDefinitionIdentifier;
@@ -25,6 +26,7 @@ import eu.w4.engine.client.User;
 import eu.w4.engine.client.UserIdentifier;
 import eu.w4.engine.client.UserNotFoundException;
 import eu.w4.engine.client.UserPropertyKey;
+import eu.w4.engine.client.GroupPropertyKey;
 import eu.w4.engine.client.configuration.ConfigurationException;
 import eu.w4.engine.client.configuration.NetworkConfigurationParameter;
 import eu.w4.engine.client.mail.EmailNotification;
@@ -182,13 +184,22 @@ public class GenerateAttributesAndGroups {
 					languageIdentifier.setLocale(userLocal);
 
 					// If the user already exist -> modify the user
-					// Otherwise creation of the user
+					// Otherwise create the user
 					try {
 						UserIdentifier userIdentifier = factory.newUserIdentifier();
 						userIdentifier.setName(login);
 						userService.getUser(_principal, userIdentifier, null);
 						UserIdentifier myUser = userService.modifyUser(_principal, userIdentifier, login,
 								languageIdentifier, properties, true);
+						// modify attributes to the user
+						for (String attribute : listAttributes) {
+							if (attribute != null && !attribute.isEmpty()) {
+								String[] values = attribute.split(":");
+								AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(
+										_principal, factory, attributeService, values[0], values[1], null);
+								userService.modifyUserAttribute(_principal, myUser, attributeDefinition, values[2]);
+							}
+						}						
 						System.out.println("User " + myUser.getName() + "/" + myUser.getId() + " is modified");
 					} catch (UserNotFoundException e) {
 						// create the user
@@ -220,35 +231,63 @@ public class GenerateAttributesAndGroups {
 				final int colNumForgroupName = 1;
 				final int colNumForgroupParent = 2;
 				final int colNumForAttribut = 3;
+				final int colNumForEmail = 4;
 
-				// get content of the column
+				// get raw content from the column
 				final String groupName = xlsSheet.getCell(colNumForgroupName, r).getContents();
 				final String groupParentName = xlsSheet.getCell(colNumForgroupParent, r).getContents();
 				final String attributes = xlsSheet.getCell(colNumForAttribut, r).getContents();
+				final String email = xlsSheet.getCell(colNumForEmail, r).getContents();
+        
+				//transform raw content
+				GroupIdentifier groupParentId = null;
+				if (!"".equals(groupParentName)) {
+					groupParentId = factory.newGroupIdentifier();
+					groupParentId.setName(groupParentName);
+				}
 				String[] listAttributes = convertContentToArray(attributes);
-
+				GroupIdentifier myGroup = null;
+				
 				try {
-					GroupIdentifier myGroup = null;
-					if ("".equals(groupParentName)) {
-						myGroup = groupService.createGroup(_principal, null, groupName, null);
-					} else {
-						GroupIdentifier groupParentId = factory.newGroupIdentifier();
-						groupParentId.setName(groupParentName);
-						myGroup = groupService.createGroup(_principal, groupParentId, groupName, null);
-					}
-
-					// add attributes to the group
-					for (String attribute : listAttributes) {
-						if (attribute != null && !attribute.isEmpty()) {
-							String[] values = attribute.split(":");
-							AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
-									factory, attributeService, values[0], values[1], null);
-							groupService.addGroupAttribute(_principal, myGroup, attributeDefinition, values[2]);
+          
+          //create properties for the group
+          HashMap<String, Object> properties = new HashMap<String, Object>();
+					properties.put(GroupPropertyKey.EMAIL, email);
+        
+					// If the group already exist -> modify the group
+					// Otherwise create the group
+					try
+					{
+						GroupIdentifier groupIdentifier = factory.newGroupIdentifier();
+						groupIdentifier.setName(groupName);
+						groupService.getGroup(_principal, groupIdentifier, null);
+						// modify the group
+						myGroup = groupService.modifyGroup(_principal, groupIdentifier, groupParentId, groupName,properties);
+						// modify attributes to the group
+						for (String attribute : listAttributes) {
+							if (attribute != null && !attribute.isEmpty()) {
+								String[] values = attribute.split(":");
+								AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
+										factory, attributeService, values[0], values[1], null);
+								groupService.modifyGroupAttribute(_principal, myGroup, attributeDefinition, values[2]);
+							}
 						}
+						System.out.println("group " + myGroup.getName() + "/" + myGroup.getId() + " is modified");
+						
+					} catch (GroupNotFoundException e) {
+						myGroup = groupService.createGroup(_principal, groupParentId, groupName, properties);
+						// add attributes to the group
+						for (String attribute : listAttributes) {
+							if (attribute != null && !attribute.isEmpty()) {
+								String[] values = attribute.split(":");
+								AttributeDefinitionIdentifier attributeDefinition = getCreateAttributeDefinition(_principal,
+										factory, attributeService, values[0], values[1], null);
+								groupService.addGroupAttribute(_principal, myGroup, attributeDefinition, values[2]);
+							}
+						}
+	
+						System.out.println("group " + myGroup.getName() + "/" + myGroup.getId() + " is created");
 					}
-
-					System.out.println("group " + myGroup.getName() + "/" + myGroup.getId() + " is created");
-
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
